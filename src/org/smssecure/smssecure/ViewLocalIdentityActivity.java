@@ -26,6 +26,7 @@ import android.view.MenuItem;
 import org.smssecure.smssecure.crypto.IdentityKeyUtil;
 import org.smssecure.smssecure.crypto.IdentityKeyParcelable;
 import org.smssecure.smssecure.crypto.MasterSecret;
+import org.smssecure.smssecure.util.dualsim.SubscriptionManagerCompat;
 
 /**
  * Activity that displays the local identity key and offers the option to regenerate it.
@@ -36,8 +37,10 @@ public class ViewLocalIdentityActivity extends ViewIdentityActivity {
 
   @Override
   protected void onCreate(Bundle icicle, @NonNull MasterSecret masterSecret) {
+    int subscriptionId = SubscriptionManagerCompat.getDefaultMessagingSubscriptionId().or(-1);
+
     getIntent().putExtra(ViewIdentityActivity.IDENTITY_KEY,
-                         new IdentityKeyParcelable(IdentityKeyUtil.getIdentityKey(this)));
+                         new IdentityKeyParcelable(IdentityKeyUtil.getIdentityKey(this, subscriptionId)));
     getIntent().putExtra(ViewIdentityActivity.TITLE,
                          getString(R.string.ViewIdentityActivity_your_identity_fingerprint));
     super.onCreate(icicle, masterSecret);

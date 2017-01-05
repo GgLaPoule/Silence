@@ -155,7 +155,7 @@ public class SmsSendJob extends SendJob {
       throws InsecureFallbackApprovalException
   {
     try {
-      return new SmsCipher(new SilenceAxolotlStore(context, masterSecret)).encrypt(message);
+      return new SmsCipher(new SilenceAxolotlStore(context, masterSecret, message.getSubscriptionId())).encrypt(message);
     } catch (NoSessionException e) {
       throw new InsecureFallbackApprovalException(e);
     }
@@ -217,6 +217,7 @@ public class SmsSendJob extends SendJob {
   }
 
   private SmsManager getSmsManagerFor(int subscriptionId) {
+    Log.w(TAG, "getSmsManagerFor(" + subscriptionId + ")");
     if (Build.VERSION.SDK_INT >= 22 && subscriptionId != -1) {
       return SmsManager.getSmsManagerForSubscriptionId(subscriptionId);
     } else {

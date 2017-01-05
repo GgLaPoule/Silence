@@ -60,7 +60,7 @@ public class KeyExchangeInitiator {
   }
 
   private static void initiate(final Context context, final MasterSecret masterSecret, final Recipients recipients, boolean promptOnExisting, final int subscriptionId) {
-    if (promptOnExisting && hasInitiatedSession(context, masterSecret, recipients)) {
+    if (promptOnExisting && hasInitiatedSession(context, masterSecret, recipients, subscriptionId)) {
       AlertDialog.Builder dialog = new AlertDialog.Builder(context);
       dialog.setTitle(R.string.KeyExchangeInitiator_initiate_despite_existing_request_question);
       dialog.setMessage(R.string.KeyExchangeInitiator_youve_already_sent_a_session_initiation_request_to_this_recipient_are_you_sure);
@@ -78,12 +78,12 @@ public class KeyExchangeInitiator {
     }
   }
 
-  private static void initiateKeyExchange(Context context, MasterSecret masterSecret, Recipients recipients, int subscriptionId) {
+  public static void initiateKeyExchange(Context context, MasterSecret masterSecret, Recipients recipients, int subscriptionId) {
     Recipient         recipient         = recipients.getPrimaryRecipient();
-    SessionStore      sessionStore      = new SilenceSessionStore(context, masterSecret);
-    PreKeyStore       preKeyStore       = new SilencePreKeyStore(context, masterSecret);
-    SignedPreKeyStore signedPreKeyStore = new SilencePreKeyStore(context, masterSecret);
-    IdentityKeyStore  identityKeyStore  = new SilenceIdentityKeyStore(context, masterSecret);
+    SessionStore      sessionStore      = new SilenceSessionStore(context, masterSecret, subscriptionId);
+    PreKeyStore       preKeyStore       = new SilencePreKeyStore(context, masterSecret, subscriptionId);
+    SignedPreKeyStore signedPreKeyStore = new SilencePreKeyStore(context, masterSecret, subscriptionId);
+    IdentityKeyStore  identityKeyStore  = new SilenceIdentityKeyStore(context, masterSecret, subscriptionId);
 
     SessionBuilder    sessionBuilder    = new SessionBuilder(sessionStore, preKeyStore, signedPreKeyStore,
                                                              identityKeyStore, new AxolotlAddress(recipient.getNumber(), 1));
@@ -96,10 +96,10 @@ public class KeyExchangeInitiator {
   }
 
   private static boolean hasInitiatedSession(Context context, MasterSecret masterSecret,
-                                             Recipients recipients)
+                                             Recipients recipients, int subscriptionId)
   {
     Recipient     recipient     = recipients.getPrimaryRecipient();
-    SessionStore  sessionStore  = new SilenceSessionStore(context, masterSecret);
+    SessionStore  sessionStore  = new SilenceSessionStore(context, masterSecret, subscriptionId);
     SessionRecord sessionRecord = sessionStore.loadSession(new AxolotlAddress(recipient.getNumber(), 1));
 
     return sessionRecord.getSessionState().hasPendingKeyExchange();

@@ -50,23 +50,10 @@ import java.util.TreeSet;
 public class DatabaseUpgradeActivity extends BaseActivity {
   private static final String TAG = DatabaseUpgradeActivity.class.getSimpleName();
 
-  public static final int NO_MORE_KEY_EXCHANGE_PREFIX_VERSION  = 46;
-  public static final int MMS_BODY_VERSION                     = 46;
-  public static final int TOFU_IDENTITIES_VERSION              = 50;
-  public static final int CURVE25519_VERSION                   = 63;
-  public static final int ASYMMETRIC_MASTER_SECRET_FIX_VERSION = 73;
-  public static final int NO_V1_VERSION                        = 83;
-  public static final int SIGNED_PREKEY_VERSION                = 83;
-  public static final int NO_DECRYPT_QUEUE_VERSION             = 84;
+  public static final int MULTI_SIM_MULTI_KEYS_VERSION = 129;
 
   private static final SortedSet<Integer> UPGRADE_VERSIONS = new TreeSet<Integer>() {{
-    add(NO_MORE_KEY_EXCHANGE_PREFIX_VERSION);
-    add(TOFU_IDENTITIES_VERSION);
-    add(CURVE25519_VERSION);
-    add(ASYMMETRIC_MASTER_SECRET_FIX_VERSION);
-    add(NO_V1_VERSION);
-    add(SIGNED_PREKEY_VERSION);
-    add(NO_DECRYPT_QUEUE_VERSION);
+    add(MULTI_SIM_MULTI_KEYS_VERSION);
   }};
 
   private MasterSecret masterSecret;
@@ -77,7 +64,7 @@ public class DatabaseUpgradeActivity extends BaseActivity {
     this.masterSecret = getIntent().getParcelableExtra("master_secret");
 
     if (needsUpgradeTask()) {
-      Log.w("DatabaseUpgradeActivity", "Upgrading...");
+      Log.w(TAG, "Upgrading...");
       setContentView(R.layout.database_upgrade_activity);
 
       ProgressBar indeterminateProgress = (ProgressBar)findViewById(R.id.indeterminate_progress);
@@ -101,13 +88,13 @@ public class DatabaseUpgradeActivity extends BaseActivity {
     int currentVersionCode = Util.getCurrentApkReleaseVersion(this);
     int lastSeenVersion    = VersionTracker.getLastSeenVersion(this);
 
-    Log.w("DatabaseUpgradeActivity", "LastSeenVersion: " + lastSeenVersion);
+    Log.w(TAG, "LastSeenVersion: " + lastSeenVersion);
 
     if (lastSeenVersion >= currentVersionCode)
       return false;
 
     for (int version : UPGRADE_VERSIONS) {
-      Log.w("DatabaseUpgradeActivity", "Comparing: " + version);
+      Log.w(TAG, "Comparing: " + version);
       if (lastSeenVersion < version)
         return true;
     }
@@ -156,52 +143,15 @@ public class DatabaseUpgradeActivity extends BaseActivity {
     protected Void doInBackground(Integer... params) {
       Context context = DatabaseUpgradeActivity.this.getApplicationContext();
 
-      Log.w("DatabaseUpgradeActivity", "Running background upgrade..");
+      Log.w(TAG, "Running background upgrade..");
       DatabaseFactory.getInstance(DatabaseUpgradeActivity.this)
                      .onApplicationLevelUpgrade(context, masterSecret, params[0], this);
 
-      if (params[0] < CURVE25519_VERSION) {
+      /*if (params[0] < CURVE25519_VERSION) {
         if (!IdentityKeyUtil.hasCurve25519IdentityKeys(context)) {
           IdentityKeyUtil.generateCurve25519IdentityKeys(context, masterSecret);
         }
-      }
-
-      if (params[0] < NO_V1_VERSION) {
-        File v1sessions = new File(context.getFilesDir(), "sessions");
-
-        if (v1sessions.exists() && v1sessions.isDirectory()) {
-          File[] contents = v1sessions.listFiles();
-
-          if (contents != null) {
-            for (File session : contents) {
-              session.delete();
-            }
-          }
-
-          v1sessions.delete();
-        }
-      }
-
-      if (params[0] < NO_DECRYPT_QUEUE_VERSION) {
-        EncryptingSmsDatabase smsDatabase  = DatabaseFactory.getEncryptingSmsDatabase(getApplicationContext());
-
-        SmsDatabase.Reader smsReader  = null;
-
-        SmsMessageRecord record;
-
-        try {
-          smsReader = smsDatabase.getDecryptInProgressMessages(masterSecret);
-
-          while ((record = smsReader.getNext()) != null) {
-            ApplicationContext.getInstance(getApplicationContext())
-                              .getJobManager()
-                              .add(new SmsDecryptJob(getApplicationContext(), record.getId()));
-          }
-        } finally {
-          if (smsReader != null)
-            smsReader.close();
-        }
-      }
+      }*/
 
       return null;
     }
