@@ -127,7 +127,15 @@ public class IdentityKeyUtil {
     if (!preferencesEditor.commit()) throw new AssertionError("failed to save identity key/value to shared preferences");
   }
 
-  private static String getIdentityPublicKeyDjbPref(int subscriptionId) {
+  public static void remove(Context context, String key) {
+    SharedPreferences preferences   = context.getSharedPreferences(MasterSecretUtil.PREFERENCES_NAME, 0);
+    Editor preferencesEditor        = preferences.edit();
+
+    preferencesEditor.remove(key);
+    if (!preferencesEditor.commit()) throw new AssertionError("failed to remove identity key/value to shared preferences");
+  }
+
+  public static String getIdentityPublicKeyDjbPref(int subscriptionId) {
     if (Build.VERSION.SDK_INT >= 22 && subscriptionId != -1) {
       return IDENTITY_PUBLIC_KEY_DJB_PREF + "_" + subscriptionId;
     } else {
@@ -135,7 +143,7 @@ public class IdentityKeyUtil {
     }
   }
 
-  private static String getIdentityPrivateKeyDjbPref(int subscriptionId) {
+  public static String getIdentityPrivateKeyDjbPref(int subscriptionId) {
     if (Build.VERSION.SDK_INT >= 22 && subscriptionId != -1) {
       return IDENTITY_PRIVATE_KEY_DJB_PREF + "_" + subscriptionId;
     } else {

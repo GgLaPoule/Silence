@@ -229,7 +229,7 @@ public class SmsDecryptJob extends MasterSecretJob {
       throws InvalidMessageException
   {
     try {
-      AsymmetricMasterSecret asymmetricMasterSecret = MasterSecretUtil.getAsymmetricMasterSecret(context, masterSecret, subscriptionId);
+      AsymmetricMasterSecret asymmetricMasterSecret = MasterSecretUtil.getAsymmetricMasterSecret(context, masterSecret);
       AsymmetricMasterCipher asymmetricMasterCipher = new AsymmetricMasterCipher(asymmetricMasterSecret);
 
       return asymmetricMasterCipher.decryptBody(body);

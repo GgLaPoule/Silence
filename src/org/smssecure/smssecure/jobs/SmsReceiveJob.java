@@ -96,7 +96,7 @@ public class SmsReceiveJob extends ContextJob {
     if (message.isSecureMessage()) {
       messageAndThreadId = database.insertMessageInbox((MasterSecret)null, message);
     } else if (masterSecret == null) {
-      messageAndThreadId = database.insertMessageInbox(MasterSecretUtil.getAsymmetricMasterSecret(context, null, message.getSubscriptionId()), message);
+      messageAndThreadId = database.insertMessageInbox(MasterSecretUtil.getAsymmetricMasterSecret(context, null), message);
     } else {
       messageAndThreadId = database.insertMessageInbox(masterSecret, message);
     }

@@ -153,6 +153,10 @@ public class SilenceSessionStore implements SessionStore {
   }
 
   private File getSessionDirectory() {
+    return getSessionDirectory(context);
+  }
+
+  public static File getSessionDirectory(Context context) {
     File directory = new File(context.getFilesDir(), SESSIONS_DIRECTORY_V2);
 
     if (!directory.exists()) {

@@ -21,28 +21,22 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.telephony.SubscriptionManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
 
-import org.smssecure.smssecure.crypto.IdentityKeyUtil;
 import org.smssecure.smssecure.crypto.MasterSecret;
 import org.smssecure.smssecure.database.DatabaseFactory;
-import org.smssecure.smssecure.database.MmsDatabase;
-import org.smssecure.smssecure.database.MmsDatabase.Reader;
-import org.smssecure.smssecure.database.EncryptingSmsDatabase;
-import org.smssecure.smssecure.database.model.MessageRecord;
-import org.smssecure.smssecure.database.SmsDatabase;
-import org.smssecure.smssecure.database.model.SmsMessageRecord;
-import org.smssecure.smssecure.jobs.SmsDecryptJob;
 import org.smssecure.smssecure.notifications.MessageNotifier;
+import org.smssecure.smssecure.util.dualsim.DualSimUpgradeUtil;
 import org.smssecure.smssecure.util.ParcelUtil;
 import org.smssecure.smssecure.util.Util;
 import org.smssecure.smssecure.util.VersionTracker;
 import org.whispersystems.jobqueue.EncryptionKeys;
 
-import java.io.File;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -147,11 +141,20 @@ public class DatabaseUpgradeActivity extends BaseActivity {
       DatabaseFactory.getInstance(DatabaseUpgradeActivity.this)
                      .onApplicationLevelUpgrade(context, masterSecret, params[0], this);
 
-      /*if (params[0] < CURVE25519_VERSION) {
-        if (!IdentityKeyUtil.hasCurve25519IdentityKeys(context)) {
-          IdentityKeyUtil.generateCurve25519IdentityKeys(context, masterSecret);
+      if (params[0] < MULTI_SIM_MULTI_KEYS_VERSION) {
+        if (Build.VERSION.SDK_INT >= 22) {
+          SubscriptionManager subscriptionManager = SubscriptionManager.from(context);
+
+          /*
+           * getDefaultSubscriptionId() is available for API 24+ only, so we
+           * move keys and session to SIM card in slot 1, not the default one.
+           */
+          int defaultSubscriptionId = subscriptionManager.getActiveSubscriptionInfoList().get(0).getSubscriptionId();
+
+          DualSimUpgradeUtil.moveIdentityKeysAndSessionsToSubscriptionId(context, -1, defaultSubscriptionId);
+          DualSimUpgradeUtil.generateKeysIfDoNotExist(context, masterSecret);
         }
-      }*/
+      }
 
       return null;
     }

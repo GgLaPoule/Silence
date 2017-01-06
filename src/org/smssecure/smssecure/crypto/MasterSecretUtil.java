@@ -19,7 +19,6 @@ package org.smssecure.smssecure.crypto;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -54,7 +53,6 @@ import javax.crypto.spec.SecretKeySpec;
  */
 
 public class MasterSecretUtil {
-  private final static String TAG = MasterSecretUtil.class.getSimpleName();
 
   public static final String UNENCRYPTED_PASSPHRASE  = "unencrypted";
   public static final String PREFERENCES_NAME        = "SecureSMS-Preferences";
@@ -115,21 +113,20 @@ public class MasterSecretUtil {
       return new MasterSecret(new SecretKeySpec(encryptionSecret, "AES"),
                               new SecretKeySpec(macSecret, "HmacSHA1"));
     } catch (GeneralSecurityException e) {
-      Log.w(TAG, e);
+      Log.w("keyutil", e);
       return null; //XXX
     } catch (IOException e) {
-      Log.w(TAG, e);
+      Log.w("keyutil", e);
       return null; //XXX
     }
   }
 
   public static AsymmetricMasterSecret getAsymmetricMasterSecret(Context context,
-                                                                 MasterSecret masterSecret,
-                                                                 int subscriptionId)
+                                                                 MasterSecret masterSecret)
   {
     try {
-      byte[] djbPublicBytes   = retrieve(context, getAsymmetricLocalPublicDjb(subscriptionId));
-      byte[] djbPrivateBytes  = retrieve(context, getAsymmetricLocalPrivateDjb(subscriptionId));
+      byte[] djbPublicBytes   = retrieve(context, ASYMMETRIC_LOCAL_PUBLIC_DJB);
+      byte[] djbPrivateBytes  = retrieve(context, ASYMMETRIC_LOCAL_PRIVATE_DJB);
 
       ECPublicKey  djbPublicKey  = null;
       ECPrivateKey djbPrivateKey = null;
@@ -153,15 +150,13 @@ public class MasterSecretUtil {
   }
 
   public static AsymmetricMasterSecret generateAsymmetricMasterSecret(Context context,
-                                                                      MasterSecret masterSecret,
-                                                                      int subscriptionId)
+                                                                      MasterSecret masterSecret)
   {
-    Log.w(TAG, "Generating asymmetric MasterSecret for subscription ID " + subscriptionId);
     MasterCipher masterCipher = new MasterCipher(masterSecret);
     ECKeyPair    keyPair      = Curve.generateKeyPair();
 
-    save(context, getAsymmetricLocalPublicDjb(subscriptionId), keyPair.getPublicKey().serialize());
-    save(context, getAsymmetricLocalPrivateDjb(subscriptionId), masterCipher.encryptKey(keyPair.getPrivateKey()));
+    save(context, ASYMMETRIC_LOCAL_PUBLIC_DJB, keyPair.getPublicKey().serialize());
+    save(context, ASYMMETRIC_LOCAL_PRIVATE_DJB, masterCipher.encryptKey(keyPair.getPrivateKey()));
 
     return new AsymmetricMasterSecret(keyPair.getPublicKey(), keyPair.getPrivateKey());
   }
@@ -186,14 +181,14 @@ public class MasterSecretUtil {
       return new MasterSecret(new SecretKeySpec(encryptionSecret, "AES"),
                               new SecretKeySpec(macSecret, "HmacSHA1"));
     } catch (GeneralSecurityException e) {
-      Log.w(TAG, e);
+      Log.w("keyutil", e);
       return null;
     }
   }
 
-  public static boolean hasAsymmericMasterSecret(Context context, int subscriptionId) {
+  public static boolean hasAsymmericMasterSecret(Context context) {
     SharedPreferences settings = context.getSharedPreferences(PREFERENCES_NAME, 0);
-    return settings.contains(getAsymmetricLocalPublicDjb(subscriptionId));
+    return settings.contains(ASYMMETRIC_LOCAL_PUBLIC_DJB);
   }
 
   public static boolean isPassphraseInitialized(Context context) {
@@ -252,7 +247,7 @@ public class MasterSecretUtil {
       SecretKey key = generator.generateKey();
       return key.getEncoded();
     } catch (NoSuchAlgorithmException ex) {
-      Log.w(TAG, ex);
+      Log.w("keyutil", ex);
       return null;
     }
   }
@@ -262,7 +257,7 @@ public class MasterSecretUtil {
       KeyGenerator generator = KeyGenerator.getInstance("HmacSHA1");
       return generator.generateKey().getEncoded();
     } catch (NoSuchAlgorithmException e) {
-      Log.w(TAG, e);
+      Log.w("keyutil", e);
       return null;
     }
   }
@@ -293,10 +288,10 @@ public class MasterSecretUtil {
       if (scaledIterationTarget < MINIMUM_ITERATION_COUNT) return MINIMUM_ITERATION_COUNT;
       else                                                 return scaledIterationTarget;
     } catch (NoSuchAlgorithmException e) {
-      Log.w(TAG, e);
+      Log.w("MasterSecretUtil", e);
       return MINIMUM_ITERATION_COUNT;
     } catch (InvalidKeySpecException e) {
-      Log.w(TAG, e);
+      Log.w("MasterSecretUtil", e);
       return MINIMUM_ITERATION_COUNT;
     }
   }
@@ -369,21 +364,5 @@ public class MasterSecretUtil {
     System.arraycopy(mac,  0, result, data.length, mac.length);
 
     return result;
-  }
-
-  private static String getAsymmetricLocalPublicDjb(int subscriptionId) {
-    if (Build.VERSION.SDK_INT >= 22 && subscriptionId != -1) {
-      return ASYMMETRIC_LOCAL_PUBLIC_DJB + "_" + subscriptionId;
-    } else {
-      return ASYMMETRIC_LOCAL_PUBLIC_DJB;
-    }
-  }
-
-  private static String getAsymmetricLocalPrivateDjb(int subscriptionId) {
-    if (Build.VERSION.SDK_INT >= 22 && subscriptionId != -1) {
-      return ASYMMETRIC_LOCAL_PRIVATE_DJB + "_" + subscriptionId;
-    } else {
-      return ASYMMETRIC_LOCAL_PRIVATE_DJB;
-    }
   }
 }

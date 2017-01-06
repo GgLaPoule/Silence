@@ -20,12 +20,11 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
-import android.telephony.SubscriptionInfo;
-import android.telephony.SubscriptionManager;
 
 import org.smssecure.smssecure.crypto.IdentityKeyUtil;
 import org.smssecure.smssecure.crypto.MasterSecret;
 import org.smssecure.smssecure.crypto.MasterSecretUtil;
+import org.smssecure.smssecure.util.dualsim.DualSimUpgradeUtil;
 import org.smssecure.smssecure.util.SilencePreferences;
 import org.smssecure.smssecure.util.VersionTracker;
 
@@ -70,15 +69,11 @@ public class PassphraseCreateActivity extends PassphraseActivity {
       masterSecret      = MasterSecretUtil.generateMasterSecret(PassphraseCreateActivity.this,
                                                                 passphrase);
 
+      MasterSecretUtil.generateAsymmetricMasterSecret(PassphraseCreateActivity.this, masterSecret);
+
       if (Build.VERSION.SDK_INT >= 22) {
-        List<SubscriptionInfo> listSubscriptionInfo = SubscriptionManager.from(PassphraseCreateActivity.this).getActiveSubscriptionInfoList();
-        for (SubscriptionInfo subscriptionInfo : listSubscriptionInfo) {
-          int subscriptionId = subscriptionInfo.getSubscriptionId();
-          MasterSecretUtil.generateAsymmetricMasterSecret(PassphraseCreateActivity.this, masterSecret, subscriptionId);
-          IdentityKeyUtil.generateIdentityKeys(PassphraseCreateActivity.this, masterSecret, subscriptionId);
-        }
+        DualSimUpgradeUtil.generateKeysIfDoNotExist(PassphraseCreateActivity.this, masterSecret);
       } else {
-        MasterSecretUtil.generateAsymmetricMasterSecret(PassphraseCreateActivity.this, masterSecret, -1);
         IdentityKeyUtil.generateIdentityKeys(PassphraseCreateActivity.this, masterSecret, -1);
       }
       VersionTracker.updateLastSeenVersion(PassphraseCreateActivity.this);
