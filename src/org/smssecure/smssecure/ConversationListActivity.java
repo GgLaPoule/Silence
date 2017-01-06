@@ -19,16 +19,20 @@ package org.smssecure.smssecure;
 import android.content.Intent;
 import android.database.ContentObserver;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.v7.app.ActionBar;
-import android.util.Log;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.widget.SearchView;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.SubMenu;
 
 import org.smssecure.smssecure.crypto.MasterSecret;
 import org.smssecure.smssecure.database.DatabaseFactory;
@@ -39,6 +43,8 @@ import org.smssecure.smssecure.service.KeyCachingService;
 import org.smssecure.smssecure.util.DynamicLanguage;
 import org.smssecure.smssecure.util.DynamicTheme;
 import org.smssecure.smssecure.util.SilencePreferences;
+
+import java.util.List;
 
 public class ConversationListActivity extends PassphraseRequiredActionBarActivity
     implements ConversationListFragment.ConversationSelectedListener
@@ -90,6 +96,25 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
     inflater.inflate(R.menu.text_secure_normal, menu);
 
     menu.findItem(R.id.menu_clear_passphrase).setVisible(!SilencePreferences.isPasswordDisabled(this));
+
+    if (Build.VERSION.SDK_INT >= 22) {
+      List<SubscriptionInfo> activeSubscriptions = SubscriptionManager.from(this).getActiveSubscriptionInfoList();
+
+      if (activeSubscriptions.size() > 1) {
+        SubMenu identitiesMenu = menu.findItem(R.id.menu_my_identity).getSubMenu();
+        for (SubscriptionInfo subscriptionInfo : activeSubscriptions) {
+          final int subscriptionId = subscriptionInfo.getSubscriptionId();
+          identitiesMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, subscriptionInfo.getDisplayName())
+                        .setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                          @Override
+                          public boolean onMenuItemClick(MenuItem item) {
+                            handleMyIdentity(subscriptionId);
+                            return true;
+                          }
+                        });
+        }
+      }
+    }
 
     inflater.inflate(R.menu.conversation_list, menu);
     MenuItem menuItem = menu.findItem(R.id.menu_search);
@@ -195,7 +220,15 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
   }
 
   private void handleMyIdentity() {
-    startActivity(new Intent(this, ViewIdentityActivity.class));
+    if (Build.VERSION.SDK_INT < 22 || SubscriptionManager.from(this).getActiveSubscriptionInfoList().size() > 2) {
+      handleMyIdentity(-1);
+    }
+  }
+
+  private void handleMyIdentity(int subscriptionId) {
+    Intent intent = new Intent(this, ViewIdentityActivity.class);
+    intent.putExtra("subscription_id", subscriptionId);
+    startActivity(intent);
   }
 
   private void handleMarkAllRead() {
