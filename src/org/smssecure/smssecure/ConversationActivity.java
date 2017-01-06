@@ -541,22 +541,17 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
       @Override
       public void onClick(DialogInterface dialog, int which) {
         if (isSingleConversation() && isEncryptedConversation) {
-          final Context context = getApplicationContext();
+          Recipients recipients = getRecipients();
+          KeyExchangeInitiator.abort(ConversationActivity.this, masterSecret, recipients);
 
-          OutgoingEndSessionMessage endSessionMessage =
-              new OutgoingEndSessionMessage(new OutgoingTextMessage(getRecipients(), "TERMINATE", -1));
-
-          new AsyncTask<OutgoingEndSessionMessage, Void, Long>() {
-            @Override
-            protected Long doInBackground(OutgoingEndSessionMessage... messages) {
-              return MessageSender.send(context, masterSecret, messages[0], threadId, false);
-            }
-
-            @Override
-            protected void onPostExecute(Long result) {
-              sendComplete(result);
-            }
-          }.execute(endSessionMessage);
+          long allocatedThreadId;
+          if (threadId == -1) {
+            allocatedThreadId = DatabaseFactory.getThreadDatabase(getApplicationContext()).getThreadIdFor(recipients);
+          } else {
+            allocatedThreadId = threadId;
+          }
+          Log.w(TAG, "Refreshing thread "+allocatedThreadId+"...");
+          sendComplete(allocatedThreadId);
         }
       }
     });

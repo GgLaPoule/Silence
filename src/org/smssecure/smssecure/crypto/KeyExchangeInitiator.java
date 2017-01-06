@@ -32,7 +32,9 @@ import org.smssecure.smssecure.recipients.Recipient;
 import org.smssecure.smssecure.recipients.RecipientFactory;
 import org.smssecure.smssecure.recipients.Recipients;
 import org.smssecure.smssecure.sms.MessageSender;
+import org.smssecure.smssecure.sms.OutgoingEndSessionMessage;
 import org.smssecure.smssecure.sms.OutgoingKeyExchangeMessage;
+import org.smssecure.smssecure.sms.OutgoingTextMessage;
 import org.smssecure.smssecure.util.Base64;
 import org.smssecure.smssecure.util.ResUtil;
 import org.whispersystems.libaxolotl.AxolotlAddress;
@@ -47,6 +49,22 @@ import org.whispersystems.libaxolotl.state.SignedPreKeyStore;
 import java.util.List;
 
 public class KeyExchangeInitiator {
+
+  public static void abort(final Context context, final MasterSecret masterSecret, final Recipients recipients) {
+    if (Build.VERSION.SDK_INT >= 22) {
+      List<SubscriptionInfo> listSubscriptionInfo = SubscriptionManager.from(context).getActiveSubscriptionInfoList();
+      for (SubscriptionInfo subscriptionInfo : listSubscriptionInfo) {
+        abort(context, masterSecret, recipients, subscriptionInfo.getSubscriptionId());
+      }
+    } else {
+      abort(context, masterSecret, recipients, -1);
+    }
+  }
+
+  private static void abort(final Context context, final MasterSecret masterSecret, final Recipients recipients, final int subscriptionId) {
+    OutgoingEndSessionMessage endSessionMessage = new OutgoingEndSessionMessage(new OutgoingTextMessage(recipients, "TERMINATE", subscriptionId));
+    MessageSender.send(context, masterSecret, endSessionMessage, -1, false);
+  }
 
   public static void initiate(final Context context, final MasterSecret masterSecret, final Recipients recipients, boolean promptOnExisting) {
     if (Build.VERSION.SDK_INT >= 22) {
