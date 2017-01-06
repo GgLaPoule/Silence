@@ -195,7 +195,7 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
   }
 
   private void handleMyIdentity() {
-    startActivity(new Intent(this, ViewLocalIdentityActivity.class));
+    startActivity(new Intent(this, ViewIdentityActivity.class));
   }
 
   private void handleMarkAllRead() {
