@@ -102,7 +102,7 @@ public class AvatarImageView extends ImageView {
     @Override
     protected Pair<Recipients, Boolean> doInBackground(Recipients... recipients) {
       Boolean isSecureSmsDestination = masterSecret != null &&
-                                       SessionUtil.hasSession(context, masterSecret, recipients[0].getPrimaryRecipient());
+                                       SessionUtil.hasAtLeastOneSession(context, masterSecret, recipients[0].getPrimaryRecipient().getNumber());
       return new Pair<>(recipients[0], isSecureSmsDestination);
     }
 

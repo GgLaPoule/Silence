@@ -736,7 +736,7 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
     Recipient    primaryRecipient = getRecipients() == null ? null : getRecipients().getPrimaryRecipient();
     boolean      isMediaMessage   = !recipients.isSingleRecipient() || attachmentManager.isAttachmentPresent();
 
-    isSecureSmsDestination = isSingleConversation() && SessionUtil.hasSession(this, masterSecret, primaryRecipient);
+    isSecureSmsDestination = isSingleConversation() && SessionUtil.hasAtLeastOneSession(this, masterSecret, primaryRecipient.getNumber());
 
     if (isSecureSmsDestination) {
       this.isEncryptedConversation = true;
@@ -747,6 +747,10 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
     sendButton.resetAvailableTransports(isMediaMessage);
     if (!isSecureSmsDestination      ) sendButton.disableTransport(Type.SECURE_SMS);
     if (recipients.isGroupRecipient()) sendButton.disableTransport(Type.INSECURE_SMS);
+
+    if (Build.VERSION.SDK_INT >= 22) {
+      sendButton.disableTransport(Type.SECURE_SMS, SessionUtil.getSubscriptionIdWithoutSession(this, masterSecret, primaryRecipient.getNumber()));
+    }
 
     if (isSecureSmsDestination) {
       sendButton.setDefaultTransport(Type.SECURE_SMS);

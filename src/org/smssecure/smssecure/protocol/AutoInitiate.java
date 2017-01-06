@@ -89,7 +89,7 @@ public class AutoInitiate {
                                              MasterSecret masterSecret,
                                              Recipient recipient)
   {
-    return !SessionUtil.hasSession(context, masterSecret, recipient);
+    return !SessionUtil.hasSession(context, masterSecret, recipient.getNumber());
   }
 
 }
