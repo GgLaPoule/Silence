@@ -71,7 +71,7 @@ public class VerifyIdentityActivity extends KeyScanningActivity {
   }
 
   private void initializeFingerprints() {
-    int subscriptionId = SubscriptionManagerCompat.getDefaultMessagingSubscriptionId().or(-1);
+    int subscriptionId = getIntent().getIntExtra("subscription_id", SubscriptionManagerCompat.getDefaultMessagingSubscriptionId().or(-1));
 
     if (!IdentityKeyUtil.hasIdentityKey(this, subscriptionId)) {
       localIdentityFingerprint.setText(R.string.VerifyIdentityActivity_you_do_not_have_an_identity_key);

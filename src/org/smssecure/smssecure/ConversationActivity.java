@@ -37,6 +37,8 @@ import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.v4.view.WindowCompat;
 import android.support.v7.app.AlertDialog;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -45,6 +47,7 @@ import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.SubMenu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnFocusChangeListener;
@@ -333,6 +336,7 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
 
     if (isSingleConversation() && isEncryptedConversation) {
       inflater.inflate(R.menu.conversation_secure_identity, menu);
+      inflateSubMenu(menu);
       inflater.inflate(R.menu.conversation_secure_sms, menu.findItem(R.id.menu_security).getSubMenu());
     } else if (isSingleConversation()) {
       inflater.inflate(R.menu.conversation_insecure_no_push, menu);
@@ -408,6 +412,27 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
     emojiToggle.setToEmoji();
   }
 
+  private void inflateSubMenu(Menu menu) {
+    if (Build.VERSION.SDK_INT >= 22) {
+      List<SubscriptionInfo> activeSubscriptions = SubscriptionManager.from(this).getActiveSubscriptionInfoList();
+
+      if (activeSubscriptions.size() > 1) {
+        SubMenu identitiesMenu = menu.findItem(R.id.menu_verify_identity).getSubMenu();
+        for (SubscriptionInfo subscriptionInfo : activeSubscriptions) {
+          final int subscriptionId = subscriptionInfo.getSubscriptionId();
+          identitiesMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, subscriptionInfo.getDisplayName())
+                        .setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                          @Override
+                          public boolean onMenuItemClick(MenuItem item) {
+                            handleVerifyIdentity(subscriptionId);
+                            return true;
+                          }
+                        });
+        }
+      }
+    }
+  }
+
   //////// Event Handlers
 
   private void handleReturnToConversationList() {
@@ -481,7 +506,14 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
   }
 
   private void handleVerifyIdentity() {
+    if (Build.VERSION.SDK_INT < 22 || SubscriptionManager.from(this).getActiveSubscriptionInfoList().size() > 2) {
+      handleVerifyIdentity(-1);
+    }
+  }
+
+  private void handleVerifyIdentity(int subscriptionId) {
     Intent verifyIdentityIntent = new Intent(this, VerifyIdentityActivity.class);
+    verifyIdentityIntent.putExtra("subscription_id", subscriptionId);
     verifyIdentityIntent.putExtra("recipient", getRecipients().getPrimaryRecipient().getRecipientId());
     startActivity(verifyIdentityIntent);
   }
