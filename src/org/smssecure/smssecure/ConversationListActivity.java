@@ -26,8 +26,6 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.ActionBar;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.widget.SearchView;
-import android.telephony.SubscriptionInfo;
-import android.telephony.SubscriptionManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -40,6 +38,8 @@ import org.smssecure.smssecure.notifications.MessageNotifier;
 import org.smssecure.smssecure.recipients.RecipientFactory;
 import org.smssecure.smssecure.recipients.Recipients;
 import org.smssecure.smssecure.service.KeyCachingService;
+import org.smssecure.smssecure.util.dualsim.SubscriptionInfoCompat;
+import org.smssecure.smssecure.util.dualsim.SubscriptionManagerCompat;
 import org.smssecure.smssecure.util.DynamicLanguage;
 import org.smssecure.smssecure.util.DynamicTheme;
 import org.smssecure.smssecure.util.SilencePreferences;
@@ -58,6 +58,8 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
   private ContentObserver observer;
   private MasterSecret masterSecret;
 
+  private List<SubscriptionInfoCompat> activeSubscriptions;
+
   @Override
   protected void onPreCreate() {
     dynamicTheme.onCreate(this);
@@ -67,6 +69,7 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
   @Override
   protected void onCreate(Bundle icicle, @NonNull MasterSecret masterSecret) {
     this.masterSecret = masterSecret;
+    this.activeSubscriptions = new SubscriptionManagerCompat(this).getActiveSubscriptionInfoList();
 
     getSupportActionBar().setDisplayOptions(ActionBar.DISPLAY_SHOW_HOME | ActionBar.DISPLAY_SHOW_TITLE);
     getSupportActionBar().setTitle(R.string.app_name);
@@ -97,22 +100,18 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
 
     menu.findItem(R.id.menu_clear_passphrase).setVisible(!SilencePreferences.isPasswordDisabled(this));
 
-    if (Build.VERSION.SDK_INT >= 22) {
-      List<SubscriptionInfo> activeSubscriptions = SubscriptionManager.from(this).getActiveSubscriptionInfoList();
-
-      if (activeSubscriptions.size() > 1) {
-        SubMenu identitiesMenu = menu.findItem(R.id.menu_my_identity).getSubMenu();
-        for (SubscriptionInfo subscriptionInfo : activeSubscriptions) {
-          final int subscriptionId = subscriptionInfo.getSubscriptionId();
-          identitiesMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, subscriptionInfo.getDisplayName())
-                        .setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                          @Override
-                          public boolean onMenuItemClick(MenuItem item) {
-                            handleMyIdentity(subscriptionId);
-                            return true;
-                          }
-                        });
-        }
+    if (Build.VERSION.SDK_INT >= 22 && activeSubscriptions.size() > 1) {
+      SubMenu identitiesMenu = menu.findItem(R.id.menu_my_identity).getSubMenu();
+      for (SubscriptionInfoCompat subscriptionInfo : activeSubscriptions) {
+        final int subscriptionId = subscriptionInfo.getSubscriptionId();
+        identitiesMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, subscriptionInfo.getDisplayName())
+                      .setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                        @Override
+                        public boolean onMenuItemClick(MenuItem item) {
+                          handleMyIdentity(subscriptionId);
+                          return true;
+                        }
+                      });
       }
     }
 
@@ -220,8 +219,9 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
   }
 
   private void handleMyIdentity() {
-    if (Build.VERSION.SDK_INT < 22 || SubscriptionManager.from(this).getActiveSubscriptionInfoList().size() > 2) {
-      handleMyIdentity(-1);
+    if (Build.VERSION.SDK_INT < 22 || activeSubscriptions.size() < 2) {
+      int subscriptionId = Build.VERSION.SDK_INT < 2 ? -1 : activeSubscriptions.get(0).getSubscriptionId();
+      handleMyIdentity(subscriptionId);
     }
   }
 

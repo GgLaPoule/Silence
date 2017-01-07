@@ -21,7 +21,7 @@ public class SubscriptionManagerCompat {
   }
 
   public Optional<SubscriptionInfoCompat> getActiveSubscriptionInfo(int subscriptionId) {
-    if (Build.VERSION.SDK_INT < 22) {
+    if (Build.VERSION.SDK_INT < 22 || getActiveSubscriptionInfoList().size() <= 0) {
       return Optional.absent();
     }
 
